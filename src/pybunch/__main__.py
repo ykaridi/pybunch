@@ -8,9 +8,6 @@ from . import packed_base
 from .packed_base import DynamicLocalImporter, ModulePath, ModuleDescription
 
 
-module = str
-
-
 class Project:
     def __init__(self, package_mapping: Dict[ModulePath, Path], package: str):
         if package is not None:
@@ -20,7 +17,7 @@ class Project:
         self._package = package
 
     @property
-    def dynamic_local_importer(self):
+    def dynamic_local_importer(self) -> DynamicLocalImporter:
         module_descriptions = {}
         for relative_path, absolute_path in self._package_mapping.items():
             name = '.'.join(relative_path.parts)
@@ -29,7 +26,7 @@ class Project:
         return DynamicLocalImporter(module_descriptions)
 
     @cached_property
-    def packed_code_base(self):
+    def packed_code_base(self) -> str:
         packed_base_file = importlib.resources.files(packed_base) / 'packed_base.py'
         with packed_base_file.open("rt") as f:
             return f.read()
@@ -74,9 +71,9 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(prog='pybunch',
                                      description='Pack a python project into a single executable file')
     parser.add_argument('-r', '--root', type=Path, required=True, help='Project root')
-    parser.add_argument('-e', '--entrypoint', required=True, type=module,
+    parser.add_argument('-e', '--entrypoint', required=True, type=str,
                         help='Entry point of python project, relative to the project root')
-    parser.add_argument('-p', '--package', required=False, default=None, type=module,
+    parser.add_argument('-p', '--package', required=False, default=None, type=str,
                         help='Package for bundled sources, allowing to import them with absolute imports'
                              ' to that package')
     parser.add_argument('-so', '--statically-optimize', action='store_true',

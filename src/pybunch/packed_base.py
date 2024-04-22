@@ -80,9 +80,11 @@ class ModuleDescription(object):
         self._module = None  # type: _module_type | None
 
     def is_package(self, name):
+        # type: (str) -> bool
         return self.path.parts[-1] == '__init__'
 
     def load_module(self, name):
+        # type: (str) -> _module_type
         if self._module is None:
             parent = '.'.join(self.path.parts[:-1])
             if self.is_package(None):
@@ -100,6 +102,7 @@ class ModuleDescription(object):
         return sys.modules.setdefault(name, self._module)
 
     def get_code(self, name):
+        # type: (str) -> str
         return self.code
 
 
@@ -109,16 +112,17 @@ RESOLVED_IMPORT_LEAF_MODULE = 'Leaf Module'
 RESOLVED_IMPORT_INTERMEDIATE_MODULE = 'Intermediate Module'
 
 
-class DynamicLocalImporter:
+class DynamicLocalImporter(object):
     def __init__(self, module_descriptions):
-        # type: (dict[str, ModuleDescription], _module_type) -> None
+        # type: (dict[str, ModuleDescription]) -> None
         self._module_descriptions = {ModulePath.from_name(name): description
                                      for name, description in module_descriptions.items()}
 
-        self._module_specs = {}  # dict[ModulePath, _module_type]
+        self._module_specs = {}  # dict[str, _module_type]
 
     @property
     def loaded_modules(self):
+        # type: () -> set[str]
         return set(self._module_specs.keys())
 
     @staticmethod
@@ -154,6 +158,7 @@ class DynamicLocalImporter:
     @property
     @contextmanager
     def add_to_meta_path(self):
+        # type: () -> 'Generator[None, None, None]'
         old_meta_path = sys.meta_path
         sys.meta_path = [self] + sys.meta_path
         yield
@@ -190,6 +195,7 @@ class DynamicLocalImporter:
             return module_spec
 
     def find_module(self, name, path=None):
+        # type: (str, str) -> ModuleDescription
         module_aliases = {}
         resolution_type, module_path = self.attempt_resolve_local_import(name, self._module_descriptions.keys(),
                                                                          module_aliases)
