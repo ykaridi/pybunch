@@ -172,7 +172,13 @@ class DynamicLocalImporter(object):
     def execute_module(self, module):
         # type: (str) -> _module_type
         with self.add_to_meta_path:
-            runpy.run_module(module, run_name='__main__')
+            new_globals = runpy.run_module(module, run_name='__main__')
+
+        current_globals = globals()
+        keys_to_delete = set(current_globals.keys()).difference(new_globals)
+        current_globals.update(new_globals)
+        for key in keys_to_delete:
+            del current_globals[key]
 
     def find_spec(self, name, path, target=None):
         # type: (str, str, object) -> 'ModuleSpec'
