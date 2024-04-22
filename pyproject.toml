@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pybunch"
-version = "0.0.1"
+dynamic = ['version']
 authors = [
   { name="Yonatan Karidi", email="ykaridi@gmail.com" },
 ]
@@ -19,6 +19,10 @@ classifiers = [
 dependencies = [
     "argparse>=1.0.0",
 ]
+
+[tool.setuptools_scm]
+version_scheme = "post-release"
+local_scheme = "no-local-version"
 
 [project.urls]
 Homepage = "https://github.com/ykaridi/pybunch"
