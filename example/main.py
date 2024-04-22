@@ -1,6 +1,7 @@
-from example.motd import MOTD
+from example.submodule import motd
 from .fibonnaci import fibonacci
 
 
-print(fibonacci(8))
-print(MOTD)
+if __name__ == '__main__':
+    print(fibonacci(8))
+    print(motd.MOTD)
