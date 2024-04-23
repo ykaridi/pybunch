@@ -78,6 +78,8 @@ class ModuleDescription(object):
         self.name = name
         self.file_name = 'pybunch <%s>' % name
         self.path = ModulePath(*name.split('.'))
+        self.parent_name = '.'.join(self.path.parts[:-1])
+        self.package = None  # type: str
         self.source_code = code
         self._compiled = None  # type: 'code'
         self._module = None  # type: _module_type | None
@@ -96,19 +98,44 @@ class ModuleDescription(object):
     def load_module(self, name):
         # type: (str) -> _module_type
         if self._module is None:
-            parent = '.'.join(self.path.parts[:-1])
             if self.is_package(None):
-                module = _module_type(parent)
+                module = _module_type(self.parent_name)
+                self.package = '.'.join(self.path.parts[:-2])
+                self.name = self.parent_name
                 module.__path__ = []
             else:
                 module = _module_type(self.name)
+                self.package = self.parent_name
 
-            module.__package__ = parent
+            module.__package__ = self.package
             module.__file__ = self.file_name
-            exec(self.compiled, module.__dict__)
+            self.run_module(_globals=module.__dict__)
             self._module = module
 
         return sys.modules.setdefault(name, self._module)
+
+    def run_module(self, _globals=None, name=None):
+        # type: (str) -> None
+        if _globals is None:
+            _globals = {}
+
+        _globals.update(__name__=name if name is not None else self.name,
+                        __file__=self.file_name,
+                        __loader__=self,
+                        __package__=self.parent_name)
+
+        restore_name = '__name__' in _globals
+        old_filename = _globals.get('__name__', None)
+        if name is not None:
+            _globals['__name__'] = name
+
+        exec(self.compiled, _globals)
+        if restore_name:
+            _globals[''] = old_filename
+        else:
+            del _globals['__name__']
+
+        return _globals
 
     def get_code(self, name):
         # type: (str) -> 'code'
@@ -192,12 +219,17 @@ class DynamicLocalImporter(object):
     def import_module(self, module):
         # type: (str) -> _module_type
         with self.add_to_meta_path, self.with_custom_stacktrace:
-            importlib.import_module(module)
+            return importlib.import_module(module)
 
     def execute_module(self, module):
         # type: (str) -> _module_type
         with self.add_to_meta_path, self.with_custom_stacktrace:
-            new_globals = runpy.run_module(module, run_name='__main__')
+            try:
+                new_globals = runpy.run_module(module, run_name='__main__')
+            except ImportError:
+                # Fallback for jython
+                imported_module = importlib.import_module(module)
+                new_globals = imported_module.__loader__.run_module(name='__main__')
 
         current_globals = globals()
         keys_to_delete = set(current_globals.keys()).difference(new_globals)
