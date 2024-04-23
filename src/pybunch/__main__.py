@@ -54,7 +54,7 @@ class Project:
             name = '.'.join(pth.parts)
             code = f'''\t'{name}': ModuleDescription('{name}', code="""
 {self._package_mapping[pth].read_text()}
-""")'''
+"""[1:])'''
             package_entries.append(code)
 
         packed_code = self.packed_code_base + f"""\n

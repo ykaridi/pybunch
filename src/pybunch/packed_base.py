@@ -6,6 +6,7 @@ import itertools
 import runpy
 import sys
 import os
+import traceback
 from contextlib import contextmanager
 
 _module_type = type(os)
@@ -75,8 +76,10 @@ class ModuleDescription(object):
     def __init__(self, name, code):
         # type: (str, str) -> None
         self.name = name
+        self.file_name = 'pybunch <%s>' % name
         self.path = ModulePath(*name.split('.'))
-        self.code = code
+        self.source_code = code
+        self.compiled = compile(code, self.file_name, 'exec')
         self._module = None  # type: _module_type | None
 
     def is_package(self, name):
@@ -94,16 +97,18 @@ class ModuleDescription(object):
                 module = _module_type(self.name)
 
             module.__package__ = parent
-            module.__file__ = "pybunch <%s>" % self.name
-            module.__loader__ = self
-            exec(self.code, module.__dict__)
+            module.__file__ = self.file_name
+            exec(self.compiled, module.__dict__)
             self._module = module
 
         return sys.modules.setdefault(name, self._module)
 
     def get_code(self, name):
-        # type: (str) -> str
-        return self.code
+        # type: (str) -> 'code'
+        return self.compiled
+
+    def get_source(self, *args, **kwargs):
+        return self.source_code
 
 
 RESOLVED_IMPORT_EXTERNAL = 'External'
@@ -164,14 +169,27 @@ class DynamicLocalImporter(object):
         yield
         sys.meta_path = old_meta_path
 
+    @property
+    @contextmanager
+    def with_custom_stacktrace(self):
+        old_except_hook = sys.excepthook
+        print_exception = traceback.print_exception
+
+        def except_hook(ex_type, ex, tb):
+            print_exception(ex_type, ex, tb)
+
+        sys.excepthook = except_hook
+        yield
+        sys.excepthook = old_except_hook
+
     def import_module(self, module):
         # type: (str) -> _module_type
-        with self.add_to_meta_path:
+        with self.add_to_meta_path, self.with_custom_stacktrace:
             importlib.import_module(module)
 
     def execute_module(self, module):
         # type: (str) -> _module_type
-        with self.add_to_meta_path:
+        with self.add_to_meta_path, self.with_custom_stacktrace:
             new_globals = runpy.run_module(module, run_name='__main__')
 
         current_globals = globals()
