@@ -79,8 +79,15 @@ class ModuleDescription(object):
         self.file_name = 'pybunch <%s>' % name
         self.path = ModulePath(*name.split('.'))
         self.source_code = code
-        self.compiled = compile(code, self.file_name, 'exec')
+        self._compiled = None  # type: 'code'
         self._module = None  # type: _module_type | None
+
+
+    @property
+    def compiled(self):
+        if self._compiled is None:
+            self._compiled = compile(self.source_code, self.file_name, 'exec')
+        return self._compiled
 
     def is_package(self, name):
         # type: (str) -> bool
