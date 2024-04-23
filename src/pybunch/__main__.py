@@ -1,70 +1,7 @@
-import importlib.resources
 import argparse
-from functools import cached_property
 from pathlib import Path
-from typing import Dict
-
-from . import packed_base
-from .packed_base import DynamicLocalImporter, ModulePath, ModuleDescription
-
-
-class Project:
-    def __init__(self, package_mapping: Dict[ModulePath, Path], package: str):
-        if package is not None:
-            package_mapping = {ModulePath(package) / relative_path: absolute_path
-                               for relative_path, absolute_path in package_mapping.items()}
-        self._package_mapping = package_mapping
-        self._package = package
-
-    @property
-    def dynamic_local_importer(self) -> DynamicLocalImporter:
-        module_descriptions = {}
-        for relative_path, absolute_path in self._package_mapping.items():
-            name = '.'.join(relative_path.parts)
-            module_descriptions[name] = ModuleDescription(name, code=absolute_path.read_text())
-
-        return DynamicLocalImporter(module_descriptions)
-
-    @cached_property
-    def packed_code_base(self) -> str:
-        packed_base_file = importlib.resources.files(packed_base) / 'packed_base.py'
-        with packed_base_file.open("rt") as f:
-            return f.read()
-
-    def pack(self, entrypoint: str, statically_optimize: bool = False) -> str:
-        entrypoint_path = ModulePath.from_name(entrypoint)
-        if self._package is not None and entrypoint_path.parts[0] != self._package:
-            entrypoint_path = ModulePath(self._package) / entrypoint_path
-        if entrypoint_path not in self._package_mapping:
-            raise ValueError("Nonexistent entrypoint")
-        entrypoint = str(entrypoint_path)
-
-        included_packages = set(self._package_mapping.keys())
-        if statically_optimize:
-            dli = self.dynamic_local_importer
-            dli.import_module(entrypoint)
-
-            loaded_modules = {ModulePath.from_name(name) for name in dli.loaded_modules}
-            included_packages = {relative_path for relative_path in self._package_mapping
-                                 if (relative_path in loaded_modules) or
-                                 (relative_path.name == '__init__' and relative_path.parent in loaded_modules)}
-
-        package_entries = []
-        for pth in included_packages:
-            name = '.'.join(pth.parts)
-            code = f'''\t'{name}': ModuleDescription('{name}', code="""
-{self._package_mapping[pth].read_text()}
-"""[1:])'''
-            package_entries.append(code)
-
-        packed_code = self.packed_code_base + f"""\n
-dli = DynamicLocalImporter({{
-{',\n'.join(package_entries)}
-}})
-dli.execute_module('{entrypoint}')
-"""
-
-        return packed_code
+from .packed_base import ModulePath
+from .project import Project
 
 
 if __name__ == '__main__':
