@@ -41,9 +41,9 @@ class Project:
 
     def static_find_imports(self, entrypoint: ModulePath):
         visited = set()
-        queue = [entrypoint]
+        queue = {entrypoint}
         while queue:
-            path = queue.pop(0)
+            path = queue.pop()
             visited.add(path)
 
             tree = ast.parse(self._package_mapping[path].read_text())
@@ -55,18 +55,27 @@ class Project:
                     else:
                         base = reduce(lambda p, _: p.parent, range(level), path)
 
-                    module = ModulePath.from_name(node.module)
-                    modules = [base / module]
+                    base = base / ModulePath.from_name(node.module)
+                    modules = [base]
+                    for name in node.names:
+                        modules.append(base / ModulePath.from_name(name.name))
+
                 elif isinstance(node, ast.Import):
                     modules = [ModulePath.from_name(name.name) for name in node.names]
                 else:
                     continue
 
-                for _module in modules:
-                    for module in [_module, _module / '__init__']:
-                        if module in self._package_mapping:
-                            if module not in visited:
-                                queue.append(module)
+                for module in modules:
+                    if module in self._package_mapping:
+                        if module not in visited and module not in queue:
+                            queue.add(module)
+
+                    while len(module.parts) > 0:
+                        init = module / '__init__'
+                        if init in self._package_mapping:
+                            if init not in visited and module not in queue:
+                                queue.add(init)
+                        module = module.parent
 
         return visited
 
