@@ -40,6 +40,8 @@ jobs:
     environment:
       name: pypi
       url: https://pypi.org/p/pybunch  # Replace <project-name> with your PyPI project name
+    permissions:
+      id-token: write  # IMPORTANT: mandatory for trusted publishing
 
     steps:
     - name: Download all the dists
@@ -52,7 +54,7 @@ jobs:
 
   github-release:
     name: >-
-      Upload the Python 🐍 distribution 📦 with Sigstore as GitHub Release
+      Upload the Python 🐍 distribution 📦 as GitHub Release
     needs:
     - publish-to-pypi
     runs-on: ubuntu-latest
