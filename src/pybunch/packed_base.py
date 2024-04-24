@@ -84,9 +84,9 @@ class ModuleDescription(object):
         self._compiled = None  # type: 'code'
         self._module = None  # type: _module_type | None
 
-
     @property
     def compiled(self):
+        # type: () -> 'code'
         if self._compiled is None:
             self._compiled = compile(self.source_code, self.file_name, 'exec')
         return self._compiled
@@ -115,7 +115,7 @@ class ModuleDescription(object):
         return sys.modules.setdefault(name, self._module)
 
     def run_module(self, _globals=None, name=None):
-        # type: (str) -> None
+        # type: (dict[str, object], str) -> dict[str, object]
         if _globals is None:
             _globals = {}
 
@@ -206,6 +206,7 @@ class DynamicLocalImporter(object):
     @property
     @contextmanager
     def with_custom_stacktrace(self):
+        # type: () -> 'Generator[None, None, None]'
         old_except_hook = sys.excepthook
         print_exception = traceback.print_exception
 
