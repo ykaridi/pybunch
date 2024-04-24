@@ -1,5 +1,6 @@
 import importlib.resources
-from functools import cached_property
+import ast
+from functools import cached_property, reduce
 from pathlib import Path
 from typing import Dict
 
@@ -30,23 +31,54 @@ class Project:
         with packed_base_file.open("rt") as f:
             return f.read()
 
+    def translate_module(self, name: str) -> ModulePath:
+        path = ModulePath.from_name(name)
+        if self._package is not None and path.parts[0] != self._package:
+            path = ModulePath(self._package) / path
+        if path in self._package_mapping:
+            return path
+        return None
+
+    def static_find_imports(self, entrypoint: ModulePath):
+        visited = set()
+        queue = [entrypoint]
+        while queue:
+            path = queue.pop(0)
+            visited.add(path)
+
+            tree = ast.parse(self._package_mapping[path].read_text())
+            for node in ast.walk(tree):
+                if isinstance(node, ast.ImportFrom):
+                    level = node.level
+                    if level == 0:
+                        base = ModulePath()
+                    else:
+                        base = reduce(lambda p, _: p.parent, range(level), path)
+
+                    module = ModulePath.from_name(node.module)
+                    modules = [base / module]
+                elif isinstance(node, ast.Import):
+                    modules = [ModulePath.from_name(name.name) for name in node.names]
+                else:
+                    continue
+
+                for _module in modules:
+                    for module in [_module, _module / '__init__']:
+                        if module in self._package_mapping:
+                            if module not in visited:
+                                queue.append(module)
+
+        return visited
+
     def pack(self, entrypoint: str, statically_optimize: bool = False) -> str:
-        entrypoint_path = ModulePath.from_name(entrypoint)
-        if self._package is not None and entrypoint_path.parts[0] != self._package:
-            entrypoint_path = ModulePath(self._package) / entrypoint_path
-        if entrypoint_path not in self._package_mapping:
+        entrypoint_path = self.translate_module(entrypoint)
+        if entrypoint_path is None:
             raise ValueError("Nonexistent entrypoint")
-        entrypoint = str(entrypoint_path)
+        entrypoint = '.'.join(entrypoint_path.parts)
 
         included_packages = set(self._package_mapping.keys())
         if statically_optimize:
-            dli = self.dynamic_local_importer
-            dli.import_module(entrypoint)
-
-            loaded_modules = {ModulePath.from_name(name) for name in dli.loaded_modules}
-            included_packages = {relative_path for relative_path in self._package_mapping
-                                 if (relative_path in loaded_modules) or
-                                 (relative_path.name == '__init__' and relative_path.parent in loaded_modules)}
+            included_packages = self.static_find_imports(entrypoint_path)
 
         code_entries = []
         package_entries = []

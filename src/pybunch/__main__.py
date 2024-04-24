@@ -14,8 +14,7 @@ if __name__ == '__main__':
                         help='Package for bundled sources, allowing to import them with absolute imports'
                              ' to that package')
     parser.add_argument('-so', '--statically-optimize', action='store_true',
-                        help='Include only files that are statically imported from the entrypoint'
-                             ' (executes code to determine)')
+                        help='Include only files that are statically imported from the entrypoint onwards')
     parser.add_argument('-o', '--output', required=True, type=Path,
                         help='Output path for packed file')
 
