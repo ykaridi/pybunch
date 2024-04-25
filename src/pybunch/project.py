@@ -4,7 +4,7 @@ from functools import cached_property, reduce
 from pathlib import Path
 from typing import Dict
 
-from . import packed_base
+import pybunch
 from .packed_base import DynamicLocalImporter, ModulePath, ModuleDescription
 
 
@@ -27,7 +27,7 @@ class Project:
 
     @cached_property
     def packed_code_base(self) -> str:
-        packed_base_file = importlib.resources.files(packed_base) / 'packed_base.py'
+        packed_base_file = importlib.resources.files(pybunch) / 'packed_base.py'
         with packed_base_file.open("rt") as f:
             return f.read()
 
@@ -104,7 +104,7 @@ class Project:
         NEWLINE = '\n'
         footer = f"""{NEWLINE * 2}
 dli = DynamicLocalImporter({{
-{NEWLINE.join("    %s" % entry for entry in package_entries)}
+{(',' + NEWLINE).join("    %s" % entry for entry in package_entries)}
 }})
 dli.execute_module('{entrypoint}')
 """
