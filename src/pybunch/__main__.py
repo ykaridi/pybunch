@@ -15,8 +15,8 @@ if __name__ == '__main__':
                              ' to that package')
     parser.add_argument('-so', '--statically-optimize', action='store_true',
                         help='Include only files that are statically imported from the entrypoint onwards')
-    parser.add_argument('-o', '--output', required=True, type=Path,
-                        help='Output path for packed file')
+    parser.add_argument('-o', '--output', required=False, type=Path, default=None,
+                        help='Output path for packed file, default is to stdout.')
 
     args = parser.parse_args()
     root = args.root
@@ -27,4 +27,8 @@ if __name__ == '__main__':
 
     project = Project({ModulePath(*pth.relative_to(root).with_suffix('').parts): pth for pth in root.glob('**/*.py')},
                       package)
-    out_file.write_text(project.pack(entrypoint, statically_optimize=statically_optimize))
+    packed = project.pack(entrypoint, statically_optimize=statically_optimize)
+    if out_file is not None:
+        out_file.write_text(packed)
+    else:
+        print(packed)
