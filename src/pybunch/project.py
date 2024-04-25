@@ -101,9 +101,10 @@ class Project:
             package_entries.append(f"'{name}': ModuleDescription('{name}', code={escaped_name})")
 
         header = ''.join(entry + "\n\n\n" for entry in code_entries)
-        footer = f"""\n\n
+        NEWLINE = '\n'
+        footer = f"""{NEWLINE * 2}
 dli = DynamicLocalImporter({{
-{',\n'.join("    %s" % entry for entry in package_entries)}
+{NEWLINE.join("    %s" % entry for entry in package_entries)}
 }})
 dli.execute_module('{entrypoint}')
 """
