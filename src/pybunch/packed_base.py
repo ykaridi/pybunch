@@ -230,6 +230,9 @@ class DynamicLocalImporter(object):
             except ImportError:
                 # Fallback for jython
                 imported_module = importlib.import_module(module)
+                loader = imported_module.__loader__
+                if not isinstance(loader, ModuleDescription):
+                    raise
                 new_globals = imported_module.__loader__.run_module(name='__main__')
 
         current_globals = globals()
