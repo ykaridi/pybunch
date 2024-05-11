@@ -29,9 +29,12 @@ class Project:
 
     def translate_module(self, name: str) -> Optional[ModulePath]:
         path = ModulePath.from_name(name)
-        if path in self._package_mapping or (path / '__main__') in self._package_mapping:
+        if path in self._package_mapping:
             return path
-        return None
+        elif (path / '__main__') in self._package_mapping:
+            return path / '__main__'
+        else:
+            return None
 
     def static_find_imports(self, entrypoint: ModulePath):
         visited = set()

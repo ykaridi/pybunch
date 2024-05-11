@@ -102,14 +102,22 @@ class ModuleDescription(object):
                 module = _module_type(self.parent_name)
                 self.package = '.'.join(self.path.parts[:-2])
                 self.name = self.parent_name
-                module.__path__ = []
+                module.__path__ = [self.name]
             else:
                 module = _module_type(self.name)
                 self.package = self.parent_name
 
+            sys.modules[self.name] = module
+
             module.__package__ = self.package
             module.__file__ = self.file_name
-            self.run_module(_globals=module.__dict__)
+
+            try:
+                self.run_module(_globals=module.__dict__)
+            except:  # noqa
+                del sys.modules[self.name]
+                raise
+
             self._module = module
 
         return sys.modules.setdefault(name, self._module)
@@ -131,7 +139,7 @@ class ModuleDescription(object):
 
         exec(self.compiled, _globals)
         if restore_name:
-            _globals[''] = old_filename
+            _globals['__name__'] = old_filename
         else:
             del _globals['__name__']
 
