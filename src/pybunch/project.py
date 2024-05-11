@@ -2,19 +2,15 @@ import importlib.resources
 import ast
 from functools import cached_property, reduce
 from pathlib import Path
-from typing import Dict
+from typing import Dict, Optional
 
 import pybunch
 from .packed_base import DynamicLocalImporter, ModulePath, ModuleDescription
 
 
 class Project:
-    def __init__(self, package_mapping: Dict[ModulePath, Path], package: str):
-        if package is not None:
-            package_mapping = {ModulePath(package) / relative_path: absolute_path
-                               for relative_path, absolute_path in package_mapping.items()}
+    def __init__(self, package_mapping: Dict[ModulePath, Path]):
         self._package_mapping = package_mapping
-        self._package = package
 
     @property
     def dynamic_local_importer(self) -> DynamicLocalImporter:
@@ -31,11 +27,9 @@ class Project:
         with packed_base_file.open("rt") as f:
             return f.read()
 
-    def translate_module(self, name: str) -> ModulePath:
+    def translate_module(self, name: str) -> Optional[ModulePath]:
         path = ModulePath.from_name(name)
-        if self._package is not None and path.parts[0] != self._package:
-            path = ModulePath(self._package) / path
-        if path in self._package_mapping:
+        if path in self._package_mapping or (path / '__main__') in self._package_mapping:
             return path
         return None
 
