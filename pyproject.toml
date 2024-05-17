@@ -27,3 +27,6 @@ local_scheme = "no-local-version"
 [project.urls]
 Homepage = "https://github.com/ykaridi/pybunch"
 Issues = "https://github.com/ykaridi/pybunch/issues"
+
+[project.scripts]
+pybunch = "pybunch.cli:main"

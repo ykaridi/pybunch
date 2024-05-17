@@ -92,9 +92,16 @@ class Project:
             name = '.'.join(pth.parts)
             escaped_name = 'PYBUNCH_%s' % '_'.join(pth.parts).upper()
             code = self._package_mapping[pth].read_text()
-            escaped_code = code.replace('\\', '\\\\').replace('"', '\\"')
 
-            code_entries.append(f'# Code for module <{name}>\n{escaped_name} = """\n{escaped_code}\n"""[1:]')
+            # Escape code
+            _escaped_code = repr(code)
+            open_quote, escaped_code, close_quote = _escaped_code[0], _escaped_code[1:-1], _escaped_code[-1]
+            assert open_quote == close_quote
+            quote = open_quote * 3
+            escaped_code = escaped_code.replace("\\n", "\n")
+            escaped_code = f"{quote}\n{escaped_code}\n{quote}"
+
+            code_entries.append(f'# Code for module <{name}>\n{escaped_name} = {escaped_code}')
             package_entries.append(f"'{name}': ModuleDescription('{name}', code={escaped_name})")
 
         header = ''.join(entry + "\n\n\n" for entry in code_entries)

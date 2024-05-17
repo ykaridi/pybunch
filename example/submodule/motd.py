@@ -1,1 +1,2 @@
-MOTD = "Hello World!"
+MOTD = """Hello World!"""
+ALTERNATIVE_MOTD = '''World! Hello'''
