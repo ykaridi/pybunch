@@ -234,7 +234,7 @@ class DynamicLocalImporter(object):
         # type: (str) -> _module_type
         with self.add_to_meta_path, self.with_custom_stacktrace:
             try:
-                new_globals = runpy.run_module(module, run_name='__main__')
+                new_globals = runpy.run_module(module, run_name='__main__', alter_sys=True)
             except ImportError:
                 # Fallback for jython
                 imported_module = importlib.import_module(module)
