@@ -88,7 +88,7 @@ class Project:
 
         code_entries = []
         package_entries = []
-        for pth in included_packages:
+        for pth in sorted(included_packages):
             name = '.'.join(pth.parts)
             escaped_name = 'PYBUNCH_%s' % '_'.join(pth.parts).upper()
             code = self._package_mapping[pth].read_text()

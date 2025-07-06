@@ -53,6 +53,10 @@ class ModulePath(object):
 
         return ModulePath(*self.parts[len(other.parts):])
 
+    def __lt__(self, other):
+        # type: ('ModulePath') -> bool
+        return self.parts < other.parts
+
     def __hash__(self):
         # type: () -> int
         return hash(self.parts)
