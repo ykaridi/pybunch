@@ -98,7 +98,6 @@ class Project:
             open_quote, escaped_code, close_quote = _escaped_code[0], _escaped_code[1:-1], _escaped_code[-1]
             assert open_quote == close_quote
             quote = open_quote * 3
-            escaped_code = escaped_code.replace("\\n", "\n")
             escaped_code = f"{quote}\n{escaped_code}\n{quote}"
 
             code_entries.append(f'# Code for module <{name}>\n{escaped_name} = {escaped_code}')
