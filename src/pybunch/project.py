@@ -94,10 +94,10 @@ class Project:
             code = self._package_mapping[pth].read_text()
 
             # Escape code
-            _escaped_code = repr(code)
-            open_quote, escaped_code, close_quote = _escaped_code[0], _escaped_code[1:-1], _escaped_code[-1]
-            assert open_quote == close_quote
-            quote = open_quote * 3
+            quote = '"""'
+            escaped_code = "\n".join([
+                line.encode("unicode_escape").decode().replace(quote, "\\" + quote) for line in code.splitlines()
+            ])
             escaped_code = f"{quote}\n{escaped_code}\n{quote}"
 
             code_entries.append(f'# Code for module <{name}>\n{escaped_name} = {escaped_code}')
